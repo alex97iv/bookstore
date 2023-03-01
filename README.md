@@ -10,7 +10,7 @@
 [V1__create_tables](/V1__create_tables.pgsql):<br>
 *Описание миграции*: созданы основные таблицы схемы.<br>
 
-![](/V1_db_schema.drawio.png)
+![](/pics/V1_db_schema.drawio.png)
 
 [V2__create_staging_table](/V2__create_staging_table.pgsql):<br>
 *Описание миграции*: создана таблица staging для импорта данных из .csv источника.<br>
@@ -21,4 +21,4 @@
 [V3__add_staging_columns](/V3__add_staging_columns.pgsql):<br>
 *Описание миграции*: добавляет в таблицу staging вычисляемые хранимые столбцы *full_title* и *authors_arr*.<br>
 
-![](/V2-V3_db_schema.drawio.png)
+![](/pics/V2-V3_db_schema.drawio.png)
