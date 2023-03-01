@@ -14,3 +14,11 @@
 
 [V2__create_staging_table](/V2__create_staging_table.pgsql):<br>
 *Описание миграции*: создана таблица staging для импорта данных из .csv источника.<br>
+
+[download_data script](scripts/download_data.pgsql):<br>
+*Описание:* производит загрузку данных из файла [data_source.csv](/data_source.csv).
+
+[V3__add_staging_columns](/V3__add_staging_columns.pgsql):<br>
+*Описание миграции*: добавляет в таблицу staging вычисляемые хранимые столбцы *full_title* и *authors_arr*.<br>
+
+![](/V2-V3_db_schema.drawio.png)
