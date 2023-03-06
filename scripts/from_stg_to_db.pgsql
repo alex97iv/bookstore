@@ -18,19 +18,30 @@ BEGIN
 		-- insert data into authors, authorship tables for every author
 		FOR i IN  array_lower(r.authors_arr,1)..array_upper(r.authors_arr,1)
 		LOOP
-			ns := string_to_array(r.authors_arr[i], ' ');
-			low_idx = array_lower(ns,1);
-			up_idx = array_upper(ns,1);
-			INSERT INTO authors(first_name, middle_name, last_name)
-			VALUES (
-				   coalesce(ns[low_idx],''), 
-				   coalesce(array_to_string(low_idx+1:up_idx-1], ' '),''), 
-				   coalesce(ns[up_idx],'')
-				   )
-				   RETURNING author_id INTO ath_id;
+			-- check if author is already in the authors table
+			SELECT author_id INTO ath_id
+			  FROM authors
+			 WHERE concat_ws(' ', first_name, middle_name, last_name) = r.authors_arr[i]::text;
 
-			INSERT INTO authorship(author_id, book_id, seq_num)
-			VALUES (ath_id, b_id, i);
+			RAISE NOTICE '%', ath_id;
+
+			IF ath_id IS NOT NULL THEN
+				-- insert with found author_id
+				INSERT INTO authorship(author_id, book_id, seq_num)
+				VALUES (ath_id, b_id, i);
+			ELSE
+				-- get new author_id
+				INSERT INTO authors(first_name, middle_name, last_name)
+				VALUES (
+				  	   coalesce(ns[low_idx],''), 
+				  	   coalesce(array_to_string(ns[low_idx+1:up_idx-1], ' '), NULL), 
+				  	   coalesce(ns[up_idx],'')
+				  	   )
+				  	   RETURNING author_id INTO ath_id;
+
+				INSERT INTO authorship(author_id, book_id, seq_num)
+				VALUES (ath_id, b_id, i);
+			END IF;
 		END LOOP;
 	END LOOP;
 END;
