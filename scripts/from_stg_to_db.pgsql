@@ -4,9 +4,6 @@ DECLARE
 	ath text;
 	b_id int;
 	ath_id int;
-	ns text[];
-	low_idx int;
-	up_idx int;
 BEGIN
 	FOR r IN
 		SELECT full_title, authors_arr
@@ -21,7 +18,7 @@ BEGIN
 			-- check if author is already in the authors table
 			SELECT author_id INTO ath_id
 			  FROM authors
-			 WHERE concat_ws(' ', first_name, middle_name, last_name) = r.authors_arr[i]::text;
+			 WHERE concat_ws(' ', first_name, middle_name, last_name) = r.authors_arr[i];
 
 			RAISE NOTICE '%', ath_id;
 
@@ -33,9 +30,9 @@ BEGIN
 				-- get new author_id
 				INSERT INTO authors(first_name, middle_name, last_name)
 				VALUES (
-				  	   coalesce(ns[low_idx],''), 
-				  	   coalesce(array_to_string(ns[low_idx+1:up_idx-1], ' '), NULL), 
-				  	   coalesce(ns[up_idx],'')
+					   substring(r.authors_arr[i], '^([A-z]*)'),
+					   substring(r.authors_arr[i], '\s(.*)\s'),
+					   substring(r.authors_arr[i], '([A-z]*)$')
 				  	   )
 				  	   RETURNING author_id INTO ath_id;
 
