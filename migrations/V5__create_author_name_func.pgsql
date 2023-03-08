@@ -1,7 +1,7 @@
 CREATE FUNCTION author_name(first_name text, middle_name text, last_name text) 
 RETURNS text AS $$
-	SELECT substr(first_name, 1, 1) || '.' ||
-		   coalesce(substr(middle_name, 1, 1) || '. ','') ||  
+	SELECT left(first_name, 1) || '.' ||
+		   coalesce(left(middle_name, 1) || '. ', ' ') ||  
 		   last_name; 
 $$ IMMUTABLE LANGUAGE SQL;
 
