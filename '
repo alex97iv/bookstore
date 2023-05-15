@@ -1,0 +1,125 @@
+/*
+Если у книги больше 2-х авторов, то выводятся только 2 первых
+*/
+
+ROLLBACK; BEGIN; 
+
+DROP VIEW IF EXISTS catalog_v;
+
+DROP FUNCTION IF EXISTS book_name(book_id int, title text);
+
+-- version 1
+-- CREATE FUNCTION book_name(book_id int, title text) RETURNS text
+-- AS $$
+-- DECLARE
+-- 	counter int := 0;
+-- 	rec record;
+-- 	title text := short_title(book_name.title);
+-- BEGIN
+-- 	FOR rec IN (
+-- 		SELECT first_name, middle_name, last_name
+-- 		  FROM authorship a
+-- 		  JOIN authors USING(author_id)
+-- 		 WHERE a.book_id = book_name.book_id
+-- 		) 
+-- 	LOOP
+-- 		counter := counter + 1;
+-- 		IF counter > 2 THEN
+-- 			title :=  title || ' ' || 'and others...';
+-- 			EXIT;
+-- 		ELSE
+-- 			title := title || ', ' || author_name(rec.first_name, rec.middle_name, rec.last_name);
+-- 		END IF;
+-- 	END LOOP;
+-- 	RETURN title;
+-- END;
+-- $$ IMMUTABLE LANGUAGE plpgsql;
+
+-- version 2
+-- CREATE FUNCTION book_name(book_id int, title text) RETURNS text
+-- AS $$
+-- WITH t AS (
+-- 	SELECT CASE 
+-- 	   	   WHEN seq_num < 3 THEN 
+-- 	 		  	author_name(first_name, middle_name, last_name) 
+-- 	       ELSE 
+-- 	 		   	'and others ...'
+-- 	    	END AS name
+-- 	  FROM authorship a
+-- 	  JOIN authors USING(author_id)
+-- 	 WHERE a.book_id = author_name.book_id
+-- 	   AND seq_num <= 3
+-- 	 ORDER BY seq_num 
+-- )
+-- 	
+-- SELECT title || string_agg(name, ', ')
+--   FROM t 
+--  GROUP BY name;
+-- $$ IMMUTABLE LANGUAGE sql;
+
+-- version 3
+-- CREATE FUNCTION book_name(book_id int, title text) RETURNS text
+-- AS $$
+-- DECLARE
+-- 	title text := short_title(book_name.title) || '. ';	
+-- 	rec record;
+-- BEGIN
+-- 	FOR rec IN (
+-- 		SELECT first_name, middle_name, last_name, seq_num
+-- 		  FROM authors 
+-- 		  JOIN authorship auth USING(author_id)
+-- 		 WHERE auth.book_id = book_name.book_id
+-- 	)
+-- 	LOOP
+-- 		EXIT WHEN (rec.seq_num > 2);
+-- 		title := title || author_name(rec.first_name, rec.middle_name, rec.last_name) || ', ';
+-- 	END LOOP;
+-- 	title := rtrim(title, ', ');
+-- 	IF rec.seq_num > 2 THEN
+-- 		title := title || ' and others ...';
+-- 	END IF;
+-- 	RETURN title;
+-- END;
+-- $$ STABLE LANGUAGE plpgsql;
+
+-- version 4
+-- CREATE FUNCTION book_name(book_id int, title text) RETURNS text
+-- AS $$
+-- DECLARE
+-- 	title text := short_title(book_name.title) || '. ';	
+-- 	rec record;
+-- BEGIN
+-- 	FOR rec IN (
+-- 		SELECT first_name, middle_name, last_name, seq_num
+-- 		  FROM authors 
+-- 		  JOIN authorship auth USING(author_id)
+-- 		 WHERE auth.book_id = book_name.book_id
+-- 	)
+-- 	LOOP
+-- 		EXIT WHEN (rec.seq_num > 2);
+-- 		title := title || author_name(rec.first_name, rec.middle_name, rec.last_name) || ', ';
+-- 	END LOOP;
+-- 	title := rtrim(title, ', ');
+-- 	IF rec.seq_num > 2 THEN
+-- 		title := title || ' and others ...';
+-- 	END IF;
+-- 	RETURN title;
+-- END;
+-- $$ STABLE LANGUAGE plpgsql;
+CREATE VIEW catalog_v AS (
+SELECT book_id,
+	   book_name(book_id, title) AS display_name,
+	   books.onhand_qty,
+	   title,
+	   concat_ws(', ', first_name, middle_name, last_name) AS full_authors_name
+  FROM books
+  JOIN authorship USING(book_id)
+  JOIN authors 	  USING(author_id)
+);
+
+SELECT catalog_v.* 
+  FROM catalog_v 
+  JOIN (SELECT book_id 
+		  FROM authorship
+		 GROUP BY book_id
+			   HAVING count(*) > 2) as t USING(book_id);
